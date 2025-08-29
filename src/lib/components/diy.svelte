@@ -5,11 +5,11 @@
 	let angle = $state(Math.PI);
 	const squareSize = 50;
 
-	let playerX = $state(0);
-	let playerY;
+    let playerX = $state(0)
+    let playerY
 
-	const cos = (angle) => Math.cos(angle);
-	const sin = (angle) => Math.sin(angle);
+    const cos = (angle) => Math.cos(angle)
+    const sin = (angle) => Math.sin(angle)
 
 	const map = [
 		[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -42,56 +42,26 @@
 		ctx.stroke();
 	}
 
-	function castRay(ctx) {
-		const rayDirX = cos(angle);
-		const rayDirY = sin(angle);
+    function dda(ctx) {
+const rayDirX = cos(angle)
+const rayDirY = sin(angle)
 
-		let deltaX = Math.abs(1 / rayDirX);
-		let deltaY = Math.abs(1 / rayDirY);
+let deltaX = 1 / rayDirX
+let deltaY = 1 / rayDirY
 
-		let mapX = Math.floor(playerX / squareSize);
-		let mapY = Math.floor(playerY / squareSize);
+let mapX = playerX / squareSize
+let mapY = playerY / squareSize
 
-		let sideDistX;
-		let sideDistY;
+let firstX
+let firstY
 
-		if (rayDirX < 1) {
-			sideDistX = (playerX / squareSize - mapX) * deltaX;
-		} else {
-			sideDistY = (mapX + 1 - playerX / squareSize) * deltaX;
-		}
+if (rayDirX < 1) {
+    firstX = (playerX / squareSize - mapX) * deltaX
+} else {
+    firstX = ()
+}
 
-		if (rayDirY < 1) {
-			sideDistY = (playerY / squareSize - mapY) * deltaY;
-		} else {
-			sideDistY = (mapY + 1 - playerY / squareSize) * deltaY;
-		}
-
-		let hit = false;
-		let side;
-
-		while (!hit) {
-			if (sideDistX > sideDistY) {
-				sideDistX += deltaX;
-				side = 0;
-			} else {
-				sideDistY += deltaY;
-				side = 1;
-			}
-
-			if (map[mapY][mapX] === 1) {
-				hit = true;
-			}
-
-			let perpWallDist;
-
-			if (side === 0) {
-				perpWallDist = sideDistX - deltaX;
-			} else {
-				perpWallDist = sideDistY - deltaY;
-			}
-		}
-	}
+    }
 
 	function loop() {
 		const ctx = canvas.getContext('2d');
