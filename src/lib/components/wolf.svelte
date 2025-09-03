@@ -145,6 +145,7 @@
 			const { distance } = getEnemyDistanceAndDirection();
 			if (distance > playerRadius + 20) {
 				currentEnemyState = 'walking';
+				enemyFrameY = 0;
 				enemyFrameX = 0;
 				return;
 			}
@@ -345,11 +346,18 @@
 		while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
 
 		if (Math.abs(angleDifference) < FOV / 2) {
-			const enemySize = (squareSize * CANVAS_SIZE) / enemyDistance;
-			const enemySpriteX = (angleDifference / FOV + 0.5) * CANVAS_SIZE - enemySize / 2;
-			const enemySpriteY = middleY - enemySize / 2;
+			const rayStep = FOV / RAYS;
+			const rayIndex = Math.floor((angleDifference + FOV / 2) / rayStep);
 
-			drawEnemy(ctx, enemySpriteX, enemySpriteY, enemySize);
+			if (rayIndex >= 0 && rayIndex < RAYS) {
+				if (enemyDistance < wallDistancePerRay[rayIndex]) {
+					const enemySize = (squareSize * CANVAS_SIZE) / enemyDistance;
+					const enemySpriteX = (angleDifference / FOV + 0.5) * CANVAS_SIZE - enemySize / 2;
+					const enemySpriteY = middleY - enemySize / 2;
+
+					drawEnemy(ctx, enemySpriteX, enemySpriteY, enemySize);
+				}
+			}
 		}
 	}
 
