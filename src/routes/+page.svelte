@@ -6,18 +6,20 @@
 	const RAYS = 100;
 	const STAGGER_FRAME = 6;
 
+	const CANVAS_SIZE = 600;
+
 	let canvas;
-	let canvasWidth = $state(0);
-	let canvasHeight = $state(0);
-	let squareSize = $state(0);
-	let playerRadius = $derived(squareSize / 4);
+	let canvasWidth = CANVAS_SIZE;
+	let canvasHeight = CANVAS_SIZE;
+	let squareSize = CANVAS_SIZE / 10;
+	let playerRadius = squareSize / 4;
 	let angle = $state(0);
-	let enemyX = $state(0);
-	let enemyY = $state(0);
+	let enemyX = $state(squareSize * 7);
+	let enemyY = $state(squareSize * 7);
 	let gameFrame = $state(0);
-	let playerX = $state(0);
-	let playerY = $state(0);
-	let middleY = $derived(canvasHeight / 2);
+	let playerX = $state(squareSize * 1.5);
+	let playerY = $state(squareSize * 1.5);
+	let middleY = CANVAS_SIZE / 2;
 	let enemyFrameX = $state(0);
 	let enemyFrameY = $state(0);
 	let playerFrameX = $state(0);
@@ -106,26 +108,6 @@
 		}
 	}
 
-	function updateCanvasSize() {
-		canvasWidth = window.innerWidth;
-		canvasHeight = window.innerHeight;
-
-		const minDimension = Math.min(canvasWidth, canvasHeight);
-		squareSize = minDimension / map.length;
-
-		if (playerX === 0 && playerY === 0) {
-			playerX = squareSize * 1.5;
-			playerY = squareSize * 1.5;
-		}
-
-		if (enemyX === 0 && enemyY === 0) {
-			enemyX = squareSize * 7;
-			enemyY = squareSize * 7;
-		}
-
-		middleY = canvasHeight / 2;
-	}
-
 	let currentEnemyState = $state('walking');
 
 	const enemyStateHandlers = {
@@ -164,6 +146,7 @@
 			if (distance > playerRadius + 20) {
 				currentEnemyState = 'walking';
 				enemyFrameX = 0;
+				enemyFrameY = 0;
 				return;
 			}
 			enemyFrameY = 1;
@@ -230,8 +213,8 @@
 			PLAYER_FRAME_Y * PLAYER_SPRITE_HEIGHT,
 			PLAYER_SPRITE_WIDTH,
 			PLAYER_SPRITE_HEIGHT,
-			canvasWidth / 2 - PLAYER_IMAGE_SIZE / 2,
-			canvasHeight - PLAYER_IMAGE_SIZE,
+			CANVAS_SIZE / 2 - PLAYER_IMAGE_SIZE / 2,
+			CANVAS_SIZE - PLAYER_IMAGE_SIZE,
 			PLAYER_IMAGE_SIZE,
 			PLAYER_IMAGE_SIZE
 		);
@@ -343,11 +326,11 @@
 	}
 
 	function drawWallColumn(ctx, columnIndex, wallDistance) {
-		const columnHeight = (squareSize * canvasHeight) / wallDistance;
-		const columnWidth = canvasWidth / RAYS;
+		const columnHeight = (squareSize * CANVAS_SIZE) / wallDistance;
+		const columnWidth = CANVAS_SIZE / RAYS;
 		const columnX = columnIndex * columnWidth;
 
-		ctx.fillRect(columnX, canvasHeight / 2 - columnHeight / 2, columnWidth, columnHeight);
+		ctx.fillRect(columnX, CANVAS_SIZE / 2 - columnHeight / 2, columnWidth, columnHeight);
 	}
 
 	function renderEnemy(ctx, wallDistancePerRay) {
@@ -363,8 +346,8 @@
 		while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
 
 		if (Math.abs(angleDifference) < FOV / 2) {
-			const enemySize = (squareSize * canvasHeight) / enemyDistance;
-			const enemySpriteX = (angleDifference / FOV + 0.5) * canvasWidth - enemySize / 2;
+			const enemySize = (squareSize * CANVAS_SIZE) / enemyDistance;
+			const enemySpriteX = (angleDifference / FOV + 0.5) * CANVAS_SIZE - enemySize / 2;
 			const enemySpriteY = middleY - enemySize / 2;
 
 			drawEnemy(ctx, enemySpriteX, enemySpriteY, enemySize);
@@ -387,7 +370,7 @@
 
 	function gameLoop() {
 		const ctx = canvas.getContext('2d');
-		ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+		ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
 		updatePlayerRotation();
 		updatePlayerMovement();
@@ -402,8 +385,6 @@
 	}
 
 	onMount(() => {
-		updateCanvasSize();
-
 		playerImage = new Image();
 		playerImage.src = '/weapon.png';
 		enemyImage = new Image();
@@ -413,5 +394,5 @@
 	});
 </script>
 
-<canvas bind:this={canvas} width={canvasWidth} height={canvasHeight}></canvas>
+<canvas bind:this={canvas} width={CANVAS_SIZE} height={CANVAS_SIZE}></canvas>
 <svelte:window onkeydown={handleKeydown} onkeyup={handleKeyup} />
