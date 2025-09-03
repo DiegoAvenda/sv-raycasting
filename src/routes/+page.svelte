@@ -146,7 +146,6 @@
 			if (distance > playerRadius + 20) {
 				currentEnemyState = 'walking';
 				enemyFrameX = 0;
-				enemyFrameY = 0;
 				return;
 			}
 			enemyFrameY = 1;
@@ -305,9 +304,9 @@
 
 		let perpWallDist;
 		if (side === 0) {
-			perpWallDist = (mapX - playerX / squareSize + (1 - stepX) / 2) / rayDirX;
+			perpWallDist = sideDistX - deltaDistX;
 		} else {
-			perpWallDist = (mapY - playerY / squareSize + (1 - stepY) / 2) / rayDirY;
+			perpWallDist = sideDistY - deltaDistY;
 		}
 
 		const hitX = playerX + perpWallDist * rayDirX * squareSize;
