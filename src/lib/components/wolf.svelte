@@ -14,14 +14,10 @@
 	let squareSize = CANVAS_SIZE / 10;
 	let playerRadius = squareSize / 4;
 	let angle = $state(0);
-	let enemyX = $state(squareSize * 7);
-	let enemyY = $state(squareSize * 7);
 	let gameFrame = $state(0);
 	let playerX = $state(squareSize * 1.5);
 	let playerY = $state(squareSize * 1.5);
 	let middleY = CANVAS_SIZE / 2;
-	let enemyFrameX = $state(0);
-	let enemyFrameY = $state(0);
 	let playerFrameX = $state(0);
 	let isPlayerFiring = $state(false);
 	let enemyImageLoaded = $state(false);
@@ -43,6 +39,23 @@
 
 	let enemyImage;
 	let playerImage;
+
+	let enemies = $state([
+		{
+			x: squareSize * 7,
+			y: squareSize * 7,
+			frameX: 0,
+			frameY: 0,
+			state: 'walking'
+		},
+		{
+			x: squareSize * 3,
+			y: squareSize * 8,
+			frameX: 0,
+			frameY: 0,
+			state: 'walking'
+		}
+	]);
 
 	const map = [
 		[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -66,10 +79,10 @@
 		return Math.sqrt(dx * dx + dy * dy);
 	}
 
-	function getEnemyDistanceAndDirection() {
-		const dx = playerX - enemyX;
-		const dy = playerY - enemyY;
-		const distance = calculateDistance(enemyX, enemyY, playerX, playerY);
+	function getEnemyDistanceAndDirection(enemy) {
+		const dx = playerX - enemy.x;
+		const dy = playerY - enemy.y;
+		const distance = calculateDistance(enemy.x, enemy.y, playerX, playerY);
 		return { dx, dy, distance };
 	}
 
@@ -108,16 +121,14 @@
 		}
 	}
 
-	let currentEnemyState = $state('walking');
-
 	const enemyStateHandlers = {
-		walking: () => {
-			const { dx, dy, distance } = getEnemyDistanceAndDirection();
+		walking: (enemy) => {
+			const { dx, dy, distance } = getEnemyDistanceAndDirection(enemy);
 			const ENEMY_VELOCITY = 1.5;
 
 			if (distance <= playerRadius + 15) {
-				currentEnemyState = 'attacking';
-				enemyFrameX = 0;
+				enemy.state = 'attacking';
+				enemy.frameX = 0;
 				return;
 			}
 
@@ -125,48 +136,48 @@
 				const normalizedDx = dx / distance;
 				const normalizedDy = dy / distance;
 
-				const newEnemyX = enemyX + normalizedDx * ENEMY_VELOCITY;
-				const newEnemyY = enemyY + normalizedDy * ENEMY_VELOCITY;
+				const newEnemyX = enemy.x + normalizedDx * ENEMY_VELOCITY;
+				const newEnemyY = enemy.y + normalizedDy * ENEMY_VELOCITY;
 
-				if (!detectCollision(newEnemyX, enemyY)) {
-					enemyX = newEnemyX;
+				if (!detectCollision(newEnemyX, enemy.y)) {
+					enemy.x = newEnemyX;
 				}
-				if (!detectCollision(enemyX, newEnemyY)) {
-					enemyY = newEnemyY;
+				if (!detectCollision(enemy.x, newEnemyY)) {
+					enemy.y = newEnemyY;
 				}
 
 				if (gameFrame % STAGGER_FRAME === 0) {
-					enemyFrameX = (enemyFrameX + 1) % ENEMY_SPRITE_COLUMNS;
+					enemy.frameX = (enemy.frameX + 1) % ENEMY_SPRITE_COLUMNS;
 				}
 			}
 		},
 
-		attacking: () => {
-			const { distance } = getEnemyDistanceAndDirection();
+		attacking: (enemy) => {
+			const { distance } = getEnemyDistanceAndDirection(enemy);
 			if (distance > playerRadius + 20) {
-				currentEnemyState = 'walking';
-				enemyFrameY = 0;
-				enemyFrameX = 0;
+				enemy.state = 'walking';
+				enemy.frameY = 0;
+				enemy.frameX = 0;
 				return;
 			}
-			enemyFrameY = 1;
+			enemy.frameY = 1;
 			if (gameFrame % (STAGGER_FRAME * 4) === 0) {
-				enemyFrameX = (enemyFrameX + 1) % ENEMY_ATTACKING_SPRITE_COLUMNS;
+				enemy.frameX = (enemy.frameX + 1) % ENEMY_ATTACKING_SPRITE_COLUMNS;
 			}
 		},
-		taking_damage: () => {
-			enemyFrameY = 2;
+		taking_damage: (enemy) => {
+			enemy.frameY = 2;
 			if (gameFrame % STAGGER_FRAME === 0) {
-				enemyFrameX++;
-				if (enemyFrameX >= ENEMY_SPRITE_COLUMNS) {
-					currentEnemyState = 'dead';
-					enemyFrameX = 3;
+				enemy.frameX++;
+				if (enemy.frameX >= ENEMY_SPRITE_COLUMNS) {
+					enemy.state = 'dead';
+					enemy.frameX = 3;
 				}
 			}
 		},
-		dead: () => {
-			enemyFrameY = 2;
-			enemyFrameX = 3;
+		dead: (enemy) => {
+			enemy.frameY = 2;
+			enemy.frameX = 3;
 		}
 	};
 
@@ -220,39 +231,37 @@
 		);
 	}
 
-	function damageEnemy() {
-		if (currentEnemyState !== 'dead') {
-			currentEnemyState = 'taking_damage';
-			enemyFrameX = 0;
+	function damageEnemy(enemy) {
+		if (enemy.state !== 'dead') {
+			enemy.state = 'taking_damage';
+			enemy.frameX = 0;
 		}
+	}
+
+	function normalizeAngleDifference(angleDiff) {
+		while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+		while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+		return angleDiff;
 	}
 
 	function processPlayerShooting() {
-		if (!isPlayerFiring || currentEnemyState === 'dead' || currentEnemyState === 'taking_damage')
-			return;
+		if (!isPlayerFiring) return;
 
-		const dx = enemyX - playerX;
-		const dy = enemyY - playerY;
-		const enemyAngle = Math.atan2(dy, dx);
-		const angleDifference = enemyAngle - angle;
+		enemies.forEach((enemy) => {
+			if (enemy.state === 'dead' || enemy.state === 'taking_damage') return;
 
-		if (angleDifference < FOV / 32) {
-			damageEnemy();
-		}
-	}
+			const dx = enemy.x - playerX;
+			const dy = enemy.y - playerY;
+			const enemyAngle = Math.atan2(dy, dx);
 
-	function drawEnemy(ctx, enemySpriteX, enemySpriteY, enemySize) {
-		ctx.drawImage(
-			enemyImage,
-			enemyFrameX * ENEMY_SPRITE_WIDTH,
-			enemyFrameY * ENEMY_SPRITE_HEIGHT,
-			ENEMY_SPRITE_WIDTH,
-			ENEMY_SPRITE_HEIGHT,
-			enemySpriteX,
-			enemySpriteY,
-			enemySize,
-			enemySize
-		);
+			let angleDifference = normalizeAngleDifference(enemyAngle - angle);
+
+			const wolfensteinAimCone = FOV / 8;
+
+			if (Math.abs(angleDifference) < wolfensteinAimCone) {
+				damageEnemy(enemy);
+			}
+		});
 	}
 
 	function castRay(rayAngle) {
@@ -333,32 +342,55 @@
 		ctx.fillRect(columnX, CANVAS_SIZE / 2 - columnHeight / 2, columnWidth, columnHeight);
 	}
 
-	function renderEnemy(ctx, wallDistancePerRay) {
-		const dx = enemyX - playerX;
-		const dy = enemyY - playerY;
-		const enemyDistance = calculateDistance(playerX, playerY, enemyX, enemyY);
-		const enemyAngle = Math.atan2(dy, dx);
+	function renderEnemies(ctx, wallDistancePerRay) {
+		const sortedEnemies = enemies
+			.map((enemy) => ({
+				...enemy,
+				distance: calculateDistance(playerX, playerY, enemy.x, enemy.y)
+			}))
+			.sort((a, b) => b.distance - a.distance);
 
 		processPlayerShooting();
 
-		let angleDifference = enemyAngle - angle;
-		while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
-		while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
+		sortedEnemies.forEach((enemy) => {
+			const dx = enemy.x - playerX;
+			const dy = enemy.y - playerY;
+			const enemyAngle = Math.atan2(dy, dx);
 
-		if (Math.abs(angleDifference) < FOV / 2) {
-			const rayStep = FOV / RAYS;
-			const rayIndex = Math.floor((angleDifference + FOV / 2) / rayStep);
+			let angleDifference = enemyAngle - angle;
+			while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
+			while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
 
-			if (rayIndex >= 0 && rayIndex < RAYS) {
-				if (enemyDistance < wallDistancePerRay[rayIndex]) {
-					const enemySize = (squareSize * CANVAS_SIZE) / enemyDistance;
-					const enemySpriteX = (angleDifference / FOV + 0.5) * CANVAS_SIZE - enemySize / 2;
-					const enemySpriteY = middleY - enemySize / 2;
+			if (Math.abs(angleDifference) < FOV / 2) {
+				const enemySize = (squareSize * CANVAS_SIZE) / enemy.distance;
+				const enemyScreenX = (angleDifference / FOV + 0.5) * CANVAS_SIZE - enemySize / 2;
+				const enemyScreenY = middleY - enemySize / 2;
 
-					drawEnemy(ctx, enemySpriteX, enemySpriteY, enemySize);
+				for (let screenX = 0; screenX < enemySize; screenX++) {
+					const canvasX = Math.floor(enemyScreenX + screenX);
+
+					if (canvasX < 0 || canvasX >= CANVAS_SIZE) continue;
+
+					const rayIndex = Math.floor((canvasX / CANVAS_SIZE) * RAYS);
+
+					if (enemy.distance < wallDistancePerRay[rayIndex]) {
+						const texX = Math.floor((screenX / enemySize) * ENEMY_SPRITE_WIDTH);
+
+						ctx.drawImage(
+							enemyImage,
+							enemy.frameX * ENEMY_SPRITE_WIDTH + texX,
+							enemy.frameY * ENEMY_SPRITE_HEIGHT,
+							1,
+							ENEMY_SPRITE_HEIGHT,
+							canvasX,
+							enemyScreenY,
+							1,
+							enemySize
+						);
+					}
 				}
 			}
-		}
+		});
 	}
 
 	function performRaycasting(ctx) {
@@ -372,7 +404,7 @@
 			drawWallColumn(ctx, i, wallResult.distance);
 		}
 
-		renderEnemy(ctx, wallDistancePerRay);
+		renderEnemies(ctx, wallDistancePerRay);
 	}
 
 	function gameLoop() {
@@ -381,7 +413,11 @@
 
 		updatePlayerRotation();
 		updatePlayerMovement();
-		enemyStateHandlers[currentEnemyState]?.();
+
+		enemies.forEach((enemy) => {
+			enemyStateHandlers[enemy.state]?.(enemy);
+		});
+
 		updatePlayerAnimation();
 		gameFrame++;
 
