@@ -12,6 +12,7 @@
 	let canvasWidth = CANVAS_SIZE;
 	let canvasHeight = CANVAS_SIZE;
 	let squareSize = CANVAS_SIZE / 10;
+	let enemyRadius = squareSize / 4;
 	let playerRadius = squareSize / 4;
 	let angle = $state(0);
 	let gameFrame = $state(0);
@@ -106,6 +107,18 @@
 		return false;
 	}
 
+	function checkEnemyCollision(newX, newY, currentEnemy) {
+		for (let other of enemies) {
+			if (other === currentEnemy || other.state === 'dead') continue;
+
+			const dist = calculateDistance(newX, newY, other.x, other.y);
+			if (dist < enemyRadius * 2) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	function handleKeydown(event) {
 		if (event.key in keysPressed) {
 			keysPressed[event.key] = true;
@@ -139,10 +152,16 @@
 				const newEnemyX = enemy.x + normalizedDx * ENEMY_VELOCITY;
 				const newEnemyY = enemy.y + normalizedDy * ENEMY_VELOCITY;
 
-				if (!detectCollision(newEnemyX, enemy.y)) {
+				if (
+					!detectCollision(newEnemyX, enemy.y) &&
+					!checkEnemyCollision(newEnemyX, enemy.y, enemy)
+				) {
 					enemy.x = newEnemyX;
 				}
-				if (!detectCollision(enemy.x, newEnemyY)) {
+				if (
+					!detectCollision(enemy.x, newEnemyY) &&
+					!checkEnemyCollision(enemy.x, newEnemyY, enemy)
+				) {
 					enemy.y = newEnemyY;
 				}
 
