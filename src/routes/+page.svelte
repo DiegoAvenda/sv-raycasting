@@ -226,6 +226,12 @@
 		}
 	}
 
+	function normalizeAngleDifference(angleDiff) {
+		while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+		while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+		return angleDiff;
+	}
+
 	function processPlayerShooting() {
 		if (!isPlayerFiring || currentEnemyState === 'dead' || currentEnemyState === 'taking_damage')
 			return;
@@ -233,9 +239,12 @@
 		const dx = enemyX - playerX;
 		const dy = enemyY - playerY;
 		const enemyAngle = Math.atan2(dy, dx);
-		const angleDifference = enemyAngle - angle;
 
-		if (angleDifference < FOV / 32) {
+		let angleDifference = normalizeAngleDifference(enemyAngle - angle);
+
+		const wolfensteinAimCone = FOV / 8;
+
+		if (Math.abs(angleDifference) < wolfensteinAimCone) {
 			damageEnemy();
 		}
 	}
