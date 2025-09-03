@@ -346,16 +346,31 @@
 		while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
 
 		if (Math.abs(angleDifference) < FOV / 2) {
-			const rayStep = FOV / RAYS;
-			const rayIndex = Math.floor((angleDifference + FOV / 2) / rayStep);
+			const enemySize = (squareSize * CANVAS_SIZE) / enemyDistance;
+			const enemyScreenX = (angleDifference / FOV + 0.5) * CANVAS_SIZE - enemySize / 2;
+			const enemyScreenY = middleY - enemySize / 2;
 
-			if (rayIndex >= 0 && rayIndex < RAYS) {
+			for (let screenX = 0; screenX < enemySize; screenX++) {
+				const canvasX = Math.floor(enemyScreenX + screenX);
+
+				if (canvasX < 0 || canvasX >= CANVAS_SIZE) continue;
+
+				const rayIndex = Math.floor((canvasX / CANVAS_SIZE) * RAYS);
+
 				if (enemyDistance < wallDistancePerRay[rayIndex]) {
-					const enemySize = (squareSize * CANVAS_SIZE) / enemyDistance;
-					const enemySpriteX = (angleDifference / FOV + 0.5) * CANVAS_SIZE - enemySize / 2;
-					const enemySpriteY = middleY - enemySize / 2;
+					const texX = Math.floor((screenX / enemySize) * ENEMY_SPRITE_WIDTH);
 
-					drawEnemy(ctx, enemySpriteX, enemySpriteY, enemySize);
+					ctx.drawImage(
+						enemyImage,
+						enemyFrameX * ENEMY_SPRITE_WIDTH + texX,
+						enemyFrameY * ENEMY_SPRITE_HEIGHT,
+						1,
+						ENEMY_SPRITE_HEIGHT,
+						canvasX,
+						enemyScreenY,
+						1,
+						enemySize
+					);
 				}
 			}
 		}
